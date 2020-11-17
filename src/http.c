@@ -42,14 +42,13 @@ int read_line_socket(int fd, char *dst, unsigned int size)
     return i;
 }
 
-void http_read_header(int sockfd, http_request *new_request)
+http_request *http_read_request(int sockfd)
 {
-	new_request = (http_request *) malloc(sizeof(http_request));
+	http_request *new_request = (http_request *) malloc(sizeof(http_request));
     new_request->method = 0; 
     TAILQ_INIT(&new_request->metadata_head); 
 
 	char line[MAX_LINE_BUF]; 
-	//http_parse_request_method(req, line); 
 
     do
     {
@@ -62,7 +61,7 @@ void http_read_header(int sockfd, http_request *new_request)
         fprintf(stdout, "%s\n", line);
 
     } while (1);
-    //http_request_destroy(new_request);
+    return new_request;
 }
 
 void http_request_destroy(http_request *req)

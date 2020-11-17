@@ -53,7 +53,7 @@ void http_parse_request_method(http_request*, char*);
 void http_parse_request_metadata(http_request*, char*);
 
 
-void http_read_header(int, http_request *);
+http_request *http_read_request(int);
 // Build request to send to server
 char *http_build_request(http_request*);
 // Send error reply to clients

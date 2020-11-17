@@ -24,7 +24,7 @@ void SIGINT_handler(int signum)
     // }
     pid_t wait_pid;
     int status;
-    fprintf(stdout, "Shut down all processes\n");
+    fprintf(stdout, "\nShutting down all processes\n");
     kill(0, SIGTERM);
     while ((wait_pid = wait(&status)) > 0);
     fprintf(stdout, "Program terminated by CTRL C\n");
@@ -37,30 +37,33 @@ static void TERM_handler(int signum)
     exit(2);
 }
 
+static void start_proxy_server(char *port);
+static void handle_client(int client_fd);
+
 int main(int argc, char *argv[])
 {
     memset(child_pids, 0, sizeof(child_pids));
-    start_proxy_server(DEFAULT_PORT);
+    start_proxy_server(argv[1]);
     return 0;
 }
 
-static void start_proxy_server(int port){
+static void start_proxy_server(char *port){
+    signal(SIGINT, SIGINT_handler);
     struct addrinfo result, *list;
     int fd;
 
     // Allocate mem for result
-    memset(&result, 0, sizeof(struct addrinfo));
-    result.ai_family = AF_UNSPEC; // any address family
-    result.ai_socktype = SOCK_STREAM; // TCP
-    result.ai_flags = AI_PASSIVE; //binding
+    memset(&result, 0, sizeof(result));
+    result.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+    result.ai_socktype = SOCK_STREAM; /* Datagram socket */
+    result.ai_flags = AI_PASSIVE;
 
-    int flag;
-    if((flag = getaddrinfo(NULL, port, &result, &list)) != 0)
+    int retVal = getaddrinfo(NULL, port, &result, &list);
+    if (retVal != 0) 
     {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(flag));
-        return;
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(retVal));
+        exit(EXIT_FAILURE);
     }
-
     struct addrinfo *iterator = list;
     if(iterator == NULL)
     {
@@ -84,15 +87,16 @@ static void start_proxy_server(int port){
         break;
     }
     freeaddrinfo(list);
-
+    
     // Prepare for connections
     if(listen(fd, MAX_REQUESTS_QUEUE_SIZE) < 0)
     {
-        perror("Server : ");
+        perror("Server ");
         return;
     }
     int accept_fd;
     // Fork process's child to handle clients
+    
     while(1)
     {
         accept_fd = accept(fd, NULL, NULL);
@@ -102,10 +106,8 @@ static void start_proxy_server(int port){
             continue;
         }
 
-        printf("Receieved connection\n");
+        printf("Received connection\n");
 
-        signal(SIGINT, SIGINT_handler);
-        
         pid_t child_pid = fork();
         
         // Parent process
@@ -135,7 +137,7 @@ static void handle_client(int client_fd){
     http_request *client_request = NULL;
 
     // Read client's request
-    http_read_header(client_fd, client_request);
+    client_request = http_read_request(client_fd);
     if(client_request == NULL)
     {
         fprintf(stderr, "Handling : cannot read client's request ! \n");
