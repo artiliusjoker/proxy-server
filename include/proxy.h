@@ -19,6 +19,9 @@
 #include "constants.h"
 #include "http.h"
 
-
+// Signal handling
+void SIGUSR1_handler(int signum);
+void SIGUSR2_handler(int signum);
+void SIGINT_handler(int signum);
 
 #endif

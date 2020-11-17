@@ -59,8 +59,18 @@ void http_read_header(int sockfd, http_request *new_request)
 			// The end of the HTTP header 
 			break; 
 		}
-
+        fprintf(stdout, "%s\n", line);
 
     } while (1);
+    //http_request_destroy(new_request);
+}
 
+void http_request_destroy(http_request *req)
+{
+    struct http_metadata_item *item; 
+    TAILQ_FOREACH(item, &req->metadata_head, entries) {
+        free((char*)item->key);
+        free((char*)item->value); 
+        free(item);
+    }
 }
