@@ -38,21 +38,17 @@ typedef struct http_request
 } http_request;
 
 // Struct to store other data of http request
-typedef struct http_metadata_item
+struct http_metadata_item
 { 
     const char *key; 
     const char *value;
     // Pointers to previous and next entries
-    TAILQ_ENTRY(metadata_item) entries;
-} metadata_item; 
+    TAILQ_ENTRY(http_metadata_item) entries;
+}; 
 
-void http_request_init(http_request**);
+// Cleaning http_request
 void http_request_free(http_request*);
-
-void http_parse_request_method(http_request*, char*);
-void http_parse_request_metadata(http_request*, char*);
-
-
+// Read request from client and store in http_request
 http_request *http_read_request(int);
 // Build request to send to server
 char *http_build_request(http_request*);
@@ -60,7 +56,6 @@ char *http_build_request(http_request*);
 char *http_build_reply();
 
 // Utils
-
 // Read a whole line from fd
 int read_line_socket(int fd, char *dst, unsigned int size);
 

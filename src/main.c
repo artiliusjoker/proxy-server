@@ -11,23 +11,28 @@ void SIGUSR1_handler(int signum)
 }
 void SIGUSR2_handler(int signum)
 {
-
-}
-void SIGINT_handler(int signum)
-{
-    // for (size_t i = 0; i < MAX_REQUESTS_QUEUE_SIZE; i++)
-    // {
-    //     if(child_pids[n_child] > 0)
-    //     {
-    //         kill(child_pids[n_child], SIGTERM);
-    //     }
-    // }
     pid_t wait_pid;
     int status;
     fprintf(stdout, "\nShutting down all processes\n");
+
     kill(0, SIGTERM);
+
     while ((wait_pid = wait(&status)) > 0);
     fprintf(stdout, "Program terminated by CTRL C\n");
+    
+    exit(EXIT_SUCCESS);
+}
+void SIGINT_handler(int signum)
+{
+    pid_t wait_pid;
+    int status;
+    fprintf(stdout, "\nShutting down all processes\n");
+
+    kill(0, SIGTERM);
+
+    while ((wait_pid = wait(&status)) > 0);
+    fprintf(stdout, "Program terminated by CTRL C\n");
+    
     exit(EXIT_SUCCESS);
 }
 

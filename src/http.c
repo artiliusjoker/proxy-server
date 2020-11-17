@@ -64,7 +64,7 @@ http_request *http_read_request(int sockfd)
     return new_request;
 }
 
-void http_request_destroy(http_request *req)
+void http_request_free(http_request *req)
 {
     struct http_metadata_item *item; 
     TAILQ_FOREACH(item, &req->metadata_head, entries) {
