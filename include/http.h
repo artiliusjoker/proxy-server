@@ -33,7 +33,7 @@ typedef struct http_request
 {
     http_method method; 
     http_version version;
-
+    const char *url;
     TAILQ_HEAD(METADATA_HEAD, http_metadata_item) metadata_head; 
 } http_request;
 
