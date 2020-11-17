@@ -7,6 +7,7 @@ OBJECTS := $(SOURCES:.c=.o)
 
 $(PROGS):	$(OBJECTS)
 	$(CC) $(OBJECTS) $(LFLAGS) -o $(PROGS)
+	mv $(PROGS) exe/$(PROGS)
 
 all: $(PROGS)
 clean:
