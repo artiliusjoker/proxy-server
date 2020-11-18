@@ -1,9 +1,16 @@
 #include "../include/proxy.h"
+#include <semaphore.h>
+
+// Global var for printing program status
+int processed_requests;
+int filtered_requests;
+int error_requests;
+char *filter_requests;
 
 // Signal handling
 void SIGUSR1_handler(int signum)
 {
-
+    print_proxy_status();
 }
 void SIGUSR2_handler(int signum)
 {
@@ -17,6 +24,8 @@ void SIGUSR2_handler(int signum)
     while ((wait_retVal = wait(&status)) > 0);
     fprintf(stdout, "Program terminated by SIGUSR2\n");
     
+    if(filter_requests)
+        free(filter_requests);
     exit(EXIT_SUCCESS);
 }
 static void TERM_handler(int signum)
@@ -27,11 +36,24 @@ static void TERM_handler(int signum)
 
 static void start_proxy_server(char *port);
 static void handle_client(int client_fd);
+static void print_proxy_status();
 
 int main(int argc, char *argv[])
 {
+    processed_requests = 0;
+    filtered_requests = 0;
+    error_requests = 0;
+    
+    if(argv[2] != NULL)
+    {
+        filter_requests = (char *) malloc(strlen(argv[2]));
+    }
+
     start_proxy_server(argv[1]);
     wait(NULL);
+
+    if(filter_requests)
+        free(filter_requests);
     exit(EXIT_SUCCESS);
 }
 
@@ -103,10 +125,10 @@ static void start_proxy_server(char *port){
         pid_t child_pid = fork();
         
         // Parent process
-        if(child_pid > 0)
-        {
-            break;
-        }
+        // if(child_pid > 0)
+        // {
+        //     break;
+        // }
         // Child process
         if(child_pid == 0)
         {
@@ -192,4 +214,14 @@ static void handle_client(int client_fd){
     close(server_fd);
     free(request_in_string);
     http_request_free(client_request);
+}
+
+static void print_proxy_status()
+{
+    fprintf(stdout, "Received SIGUSR1...reporting status:\n"
+                    "-- Processed %d requests successfully\n"
+                    "-- Filtering: %s\n"
+                    "-- Filtered %d requests"
+                    "-- Encountered %d requests in error"
+                    ,processed_requests, filter_requests, filtered_requests, error_requests);
 }
