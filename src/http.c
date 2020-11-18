@@ -117,7 +117,7 @@ http_request *http_read_request(int sockfd)
     }
     // Done first line
 
-    // Clean up strdup
+    // Clean up
     free(pointer_copy);
 
 
@@ -135,9 +135,13 @@ http_request *http_read_request(int sockfd)
         char *value = strdup(strtok(NULL, "\r"));
         free(copy);
         // remove whitespaces
-        char *p = value;
+        char *p, *hold;
+        p = strdup(value);
+        hold = p;
         while(*p == ' ') p++;
+        free(value);
         value = strdup(p);
+        free(hold);
         // create the http_metadata_item object
         struct http_metadata_item *item = malloc(sizeof(*item));
         item->key = key;
@@ -153,12 +157,15 @@ http_request *http_read_request(int sockfd)
 
 void http_request_free(http_request *req)
 {
+    free((char*)req->url);
     struct http_metadata_item *item; 
     TAILQ_FOREACH(item, &req->metadata_head, entries) {
         free((char*)item->key);
         free((char*)item->value); 
         free(item);
     }
+    free(req);
+    req = NULL;
 }
 
 static void http_request_print(http_request *req)

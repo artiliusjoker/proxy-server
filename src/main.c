@@ -1,9 +1,5 @@
 #include "../include/proxy.h"
 
-// Child list
-int child_pids[MAX_REQUESTS_QUEUE_SIZE];
-int n_child = 0;
-
 // Signal handling
 void SIGUSR1_handler(int signum)
 {
@@ -26,7 +22,7 @@ void SIGUSR2_handler(int signum)
 static void TERM_handler(int signum)
 {
     fprintf(stdout, "Shut down process #%d\n", getpid());
-    exit(2);
+    exit(EXIT_SUCCESS);
 }
 
 static void start_proxy_server(char *port);
@@ -34,9 +30,9 @@ static void handle_client(int client_fd);
 
 int main(int argc, char *argv[])
 {
-    memset(child_pids, 0, sizeof(child_pids));
     start_proxy_server(argv[1]);
-    return 0;
+    wait(NULL);
+    exit(EXIT_SUCCESS);
 }
 
 static void start_proxy_server(char *port){
@@ -109,12 +105,9 @@ static void start_proxy_server(char *port){
         // Parent process
         if(child_pid > 0)
         {
-            child_pids[n_child] = child_pid;
-            n_child = n_child + 1;
-            continue;
+            break;
         }
-
-        // Child process job
+        // Child process
         if(child_pid == 0)
         {
             signal(SIGINT, TERM_handler);
@@ -128,7 +121,6 @@ static void start_proxy_server(char *port){
 
 static void handle_client(int client_fd){
     
-    char *line;
     int server_fd;
     http_request *client_request = NULL;
 
