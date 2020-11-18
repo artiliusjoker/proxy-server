@@ -6,9 +6,10 @@ SOURCES := $(shell find . -iname '*.c')
 OBJECTS := $(SOURCES:.c=.o)
 
 $(PROGS):	$(OBJECTS)
+	rm -f exe/$(PROGS)
 	$(CC) $(OBJECTS) $(LFLAGS) -o $(PROGS)
 	mv $(PROGS) exe/$(PROGS)
 
 all: $(PROGS)
 clean:
-	rm $(OBJECTS) $(PROGS)
+	rm $(OBJECTS) exe/$(PROGS)
