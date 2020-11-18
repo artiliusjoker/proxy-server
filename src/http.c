@@ -1,4 +1,5 @@
 #include "../include/http.h"
+#include "../include/response.h"
 
 const int http_method_len = UNKNOWN - OPTIONS;
 const char *http_methods_array[] = {
@@ -201,5 +202,98 @@ static void http_request_print(http_request *req)
     struct http_metadata_item *item; 
     TAILQ_FOREACH(item, &req->metadata_head, entries) {
         printf("%s: %s\n", item->key, item->value); 
+    }
+}
+// Tuple contains : code and name of http status
+typedef struct http_status_tuple{
+    char status_code[4];
+    char status_name[20]; 
+}http_status_tuple;
+
+http_status_tuple * create_response_tuple(int status_code)
+{
+    http_status_tuple * tuple = (http_status_tuple *) malloc(sizeof(*tuple));
+    switch (status_code)
+    {
+    case OK:
+    {
+        strcpy(tuple->status_code, "200");
+        strcpy(tuple->status_name, "Ok");
+        break;
+    }       
+    case BAD_REQUEST:
+    {
+        strcpy(tuple->status_code, "400");
+        strcpy(tuple->status_name, "Bad Request");
+        break;
+    }
+    case MOVED_PERMANENTLY:
+    {
+        strcpy(tuple->status_code, "301");
+        strcpy(tuple->status_name, "Moved Permanently");
+        break;
+    }
+    case FORBIDDEN:
+    {
+        strcpy(tuple->status_code, "403");
+        strcpy(tuple->status_name, "Forbidden");
+        break;
+    }
+    case NOT_FOUND:
+    {
+        strcpy(tuple->status_code, "404");
+        strcpy(tuple->status_name, "Not Found");
+        break;
+    }
+    case METHOD_NOT_ALLOWED:
+    {
+        strcpy(tuple->status_code, "405");
+        strcpy(tuple->status_name, "Method Not Allowed");
+        break;
+    }   
+    default:
+        free(tuple);
+        tuple = NULL;
+        break;
+    }
+    return tuple;
+}
+
+
+http_custom_response *http_response_build(int status_code)
+{
+    http_custom_response *new_response = (http_custom_response *) calloc(1, sizeof(*new_response));
+    new_response->http_header = (char *) malloc(MAX_HTTP_HDR_SIZE);
+    new_response->http_html_content = NULL;
+    http_status_tuple * tuple;
+    tuple = create_response_tuple(status_code);
+    
+    int retVal = snprintf(new_response->http_header, MAX_HTTP_HDR_SIZE, 
+                                                            "HTTP/1.1 %s %s\r\n"
+                                                            "Date: Mon, 19 Nov 2020 10:21:21 GMT\r\n" // fake date
+                                                            "Cache-Control: no-cache, private\r\n" //No cache
+                                                            "Content-Length: 0\r\n" // no content                                                
+                                                            "Connection: Closed"
+                                                            "\r\n", tuple->status_code, tuple->status_name);
+    new_response->header_size = strlen(new_response->http_header);
+    new_response->content_size = 0;
+    if(retVal < 0)
+    {
+        http_response_free(new_response);
+    }
+    free(tuple);
+    return new_response;
+}
+void http_response_free(http_custom_response * response)
+{
+    if((response)->http_header)
+        free((response)->http_header);
+
+    if((response)->http_html_content)
+        free((response)->http_html_content);
+
+    if(response){
+        free(response);
+        response = NULL;
     }
 }

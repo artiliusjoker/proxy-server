@@ -136,6 +136,16 @@ static void handle_client(int client_fd){
     // Filter URLs
     
     // Filter methods
+    if(client_request->method != HEAD || client_request->method != GET)
+    {
+        http_custom_response * error_response = http_response_build(METHOD_NOT_ALLOWED);
+        send_all_to_socket(client_fd, error_response->http_header, error_response->header_size, NULL);
+
+        http_request_free(client_request);
+        http_response_free(error_response);
+        free(request_in_string);
+        return;
+    }
 
     // Connect to web server
     server_fd = connect_server(client_request);

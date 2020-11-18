@@ -1,7 +1,7 @@
 #include "../include/proxy.h"
 
 //from Beej's guide
-static int send_all_to_socket(int sock_fd, char *buf, int buf_len, int *send_len)
+int send_all_to_socket(int sock_fd, char *buf, int buf_len, int *send_len)
 {
     int total = 0;        // how many bytes we've sent
     int bytesleft = buf_len; // how many we have left to send

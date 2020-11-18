@@ -28,6 +28,7 @@ int connect_server(http_request *);
 int send_request(int, char*);
 int receive_and_reply_content(int server_fd, int client_fd);
 int send_line(int client_fd, char*line);
+int send_all_to_socket(int sock_fd, char *buf, int buf_len, int *send_len);
 // List functions
 const char *list_get_value(struct METADATA_HEAD *, const char *);
 

@@ -56,10 +56,24 @@ void http_request_free(http_request*);
 // and build the request in char* buffer
 http_request *http_read_request(int, char**);
 
-// Build raw request from struct http_request to send to server
-char *http_build_request(http_request*);
-// Send error reply to clients
-char *http_build_reply();
+// Send error replies to clients
+typedef enum http_response_code{
+    MOVED_PERMANENTLY,
+    BAD_REQUEST,
+    FORBIDDEN,
+    NOT_FOUND,
+    METHOD_NOT_ALLOWED, 
+    OK,
+}http_response_code;
+// Tuple contains : header and content to send to client
+typedef struct http_custom_response{
+    char *http_header;
+    int header_size;
+    char *http_html_content;
+    int content_size;
+}http_custom_response;
+http_custom_response *http_response_build(int);
+void http_response_free(http_custom_response *);
 
 // Utils
 // Read a whole line from fd

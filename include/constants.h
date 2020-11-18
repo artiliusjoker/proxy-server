@@ -3,3 +3,4 @@
 #define MAX_READ_BUF 2048
 #define MAX_LINE_BUF 512
 #define MAX_RECV_TIMEOUT 3
+#define MAX_HTTP_HDR_SIZE 512
