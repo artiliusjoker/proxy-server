@@ -31,6 +31,15 @@ enum http_version{
 typedef enum http_method http_method;
 typedef enum http_version http_version;
 
+// Struct to store other data of http request
+typedef struct http_metadata_item
+{ 
+    const char *key; 
+    const char *value;
+    // Pointers to previous and next entries
+    TAILQ_ENTRY(http_metadata_item) entries;
+}http_metadata_item; 
+
 // Struct to store raw request from client
 typedef struct http_request
 {
@@ -40,19 +49,13 @@ typedef struct http_request
     TAILQ_HEAD(METADATA_HEAD, http_metadata_item) metadata_head; 
 } http_request;
 
-// Struct to store other data of http request
-struct http_metadata_item
-{ 
-    const char *key; 
-    const char *value;
-    // Pointers to previous and next entries
-    TAILQ_ENTRY(http_metadata_item) entries;
-}; 
-
 // Cleaning struct http_request
 void http_request_free(http_request*);
-// Read raw request from client and store in struct http_request (machine-friendly)
-http_request *http_read_request(int);
+
+// Read raw request from client and store in struct http_request (machine-friendly) 
+// and build the request in char* buffer
+http_request *http_read_request(int, char**);
+
 // Build raw request from struct http_request to send to server
 char *http_build_request(http_request*);
 // Send error reply to clients

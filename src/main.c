@@ -121,28 +121,63 @@ static void start_proxy_server(char *port){
 
 static void handle_client(int client_fd){
     
-    int server_fd;
+    int server_fd, retVal;
     http_request *client_request = NULL;
+    char * request_in_string;
 
     // Read client's request
-    client_request = http_read_request(client_fd);
+    client_request = http_read_request(client_fd, &request_in_string);
     if(client_request == NULL)
     {
         fprintf(stderr, "Handling : cannot read client's request ! \n");
         return;
     }
-    http_request_free(client_request);
+
     // Filter URLs
     
     // Filter methods
 
     // Connect to web server
     
-    // server_fd = http_connect(client_request);
-    // if(server_fd == -1)
-    // {
-    //     http_request_destroy(client_request);
-    //     return;
-    // }
-    // close(server_fd);
+    server_fd = connect_server(client_request);
+    if(server_fd == -1)
+    {
+        http_request_free(client_request);
+        free(request_in_string);
+        return;
+    }
+
+    retVal = send_request(server_fd, request_in_string);
+    if(retVal < 0)
+    {
+        close(server_fd);
+        free(request_in_string);
+        http_request_free(client_request);
+        return;
+    }
+
+    int is_bad_encoding = 0;
+    int is_text_content = 0;
+    // Buffer to read line from socket
+    char buffer[MAX_LINE_BUF];
+    read_buffer *rbuf;
+    rbuf = calloc(1, sizeof(*rbuf));
+    rbuf->current_fd = server_fd;
+
+    while(1)
+    {   
+        read_line_socket(rbuf, buffer, MAX_LINE_BUF);
+        int line_length = strlen(buffer);
+        retVal = send_line(client_fd, buffer);
+
+        if(buffer[0] == '\r' && buffer[1] == '\n')
+        {
+            // We received the end of the HTTP header
+            break;
+        }
+    }
+    free(rbuf);
+    close(server_fd);
+    free(request_in_string);
+    http_request_free(client_request);
 }

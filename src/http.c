@@ -51,7 +51,7 @@ int read_line_socket(read_buffer *r_buf, char *dst, unsigned int size)
 
 static void http_request_print(http_request *req);
 
-http_request *http_read_request(int sockfd)
+http_request *http_read_request(int sockfd, char** request_result)
 {
 	http_request *new_request = (http_request *) malloc(sizeof(http_request));
     new_request->method = 0; 
@@ -66,6 +66,10 @@ http_request *http_read_request(int sockfd)
     read_line_socket(rbuf, buffer, MAX_LINE_BUF);
     char* token = NULL;
     char* copy, *pointer_copy;
+
+    // copy first line into string
+    *request_result = (char *) malloc(strlen(buffer) + 1);
+    strcpy(*request_result, buffer);
 
     copy = strdup(buffer);
     pointer_copy = copy;
@@ -124,7 +128,12 @@ http_request *http_read_request(int sockfd)
     // Rest : other metadata
     do
     {
-        int read_size = read_line_socket(rbuf, buffer, MAX_LINE_BUF);
+        read_line_socket(rbuf, buffer, MAX_LINE_BUF);
+        // copy first line into string
+        int buf_len = strlen(buffer);
+        int curr_len = strlen(*request_result);
+        *request_result = (char *) realloc(*request_result, (buf_len + curr_len) + 1);
+        strcat(*request_result, buffer);
         if(buffer[0] == '\r' && buffer[1] == '\n')
 		{
 			// The end of the HTTP header
@@ -151,7 +160,7 @@ http_request *http_read_request(int sockfd)
 
     } while (1);
     free(rbuf);
-    http_request_print(new_request);
+    //http_request_print(new_request);
     return new_request;
 }
 

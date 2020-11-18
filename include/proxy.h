@@ -15,6 +15,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/queue.h>
 
 #include "constants.h"
 #include "http.h"
@@ -22,5 +23,12 @@
 // Signal handling
 void SIGUSR1_handler(int signum);
 void SIGUSR2_handler(int signum);
+// Network function
+int connect_server(http_request *);
+int send_request(int, char*);
+int receive_reply();
+int send_line(int client_fd, char*line);
+// List utils
+const char *list_get_value(struct METADATA_HEAD *, const char *);
 
 #endif
