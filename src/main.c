@@ -138,7 +138,6 @@ static void handle_client(int client_fd){
     // Filter methods
 
     // Connect to web server
-    
     server_fd = connect_server(client_request);
     if(server_fd == -1)
     {
@@ -146,7 +145,7 @@ static void handle_client(int client_fd){
         free(request_in_string);
         return;
     }
-
+    // Send request to web server
     retVal = send_request(server_fd, request_in_string);
     if(retVal < 0)
     {
@@ -156,27 +155,30 @@ static void handle_client(int client_fd){
         return;
     }
 
-    int is_bad_encoding = 0;
-    int is_text_content = 0;
-    // Buffer to read line from socket
-    char buffer[MAX_LINE_BUF];
-    read_buffer *rbuf;
-    rbuf = calloc(1, sizeof(*rbuf));
-    rbuf->current_fd = server_fd;
+    // // Buffer to read line from socket
+    // char buffer[MAX_LINE_BUF];
+    // read_buffer *rbuf;
+    // rbuf = calloc(1, sizeof(*rbuf));
+    // rbuf->current_fd = server_fd;
 
-    while(1)
-    {   
-        read_line_socket(rbuf, buffer, MAX_LINE_BUF);
-        int line_length = strlen(buffer);
-        retVal = send_line(client_fd, buffer);
+    // while(1)
+    // {   
+    //     int check = read_line_socket(rbuf, buffer, MAX_LINE_BUF);
+    //     printf("%d\n", check);
+    //     int line_length = strlen(buffer);
+    //     retVal = send_line(client_fd, buffer);
+    //     // End of HTTP reponse header
+    //     if(buffer[0] == '\r' && buffer[1] == '\n')
+    //     {
+    //         // We received the end of the HTTP header
+    //         break;
+    //     }
+    // }
+    // free(rbuf);
 
-        if(buffer[0] == '\r' && buffer[1] == '\n')
-        {
-            // We received the end of the HTTP header
-            break;
-        }
-    }
-    free(rbuf);
+    // Receive and send content to client
+    receive_and_reply_content(server_fd, client_fd);
+
     close(server_fd);
     free(request_in_string);
     http_request_free(client_request);
