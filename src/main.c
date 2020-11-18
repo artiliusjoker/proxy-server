@@ -11,31 +11,18 @@ void SIGUSR1_handler(int signum)
 }
 void SIGUSR2_handler(int signum)
 {
-    pid_t wait_pid;
+    pid_t wait_retVal;
     int status;
     fprintf(stdout, "\nShutting down all processes\n");
 
-    kill(0, SIGTERM);
+    int killall = 0 - getpid();
+    kill(killall, SIGINT);
 
-    while ((wait_pid = wait(&status)) > 0);
-    fprintf(stdout, "Program terminated by CTRL C\n");
+    while ((wait_retVal = wait(&status)) > 0);
+    fprintf(stdout, "Program terminated by SIGUSR2\n");
     
     exit(EXIT_SUCCESS);
 }
-void SIGINT_handler(int signum)
-{
-    pid_t wait_pid;
-    int status;
-    fprintf(stdout, "\nShutting down all processes\n");
-
-    kill(0, SIGTERM);
-
-    while ((wait_pid = wait(&status)) > 0);
-    fprintf(stdout, "Program terminated by CTRL C\n");
-    
-    exit(EXIT_SUCCESS);
-}
-
 static void TERM_handler(int signum)
 {
     fprintf(stdout, "Shut down process #%d\n", getpid());
@@ -53,7 +40,11 @@ int main(int argc, char *argv[])
 }
 
 static void start_proxy_server(char *port){
-    signal(SIGINT, SIGINT_handler);
+    // SIGNAL handler settings
+    signal(SIGUSR2, SIGUSR2_handler);
+    signal(SIGINT, SIG_IGN);
+    //signal(SIGTERM, SIG_IGN);
+
     struct addrinfo result, *list;
     int fd;
 
@@ -101,13 +92,13 @@ static void start_proxy_server(char *port){
     }
     int accept_fd;
     // Fork process's child to handle clients
-    
+    printf("Proxy server is listening on port %s\n", port);
     while(1)
     {
         accept_fd = accept(fd, NULL, NULL);
         if(accept_fd == -1)
         {
-            perror("Server : ");
+            perror("Server ");
             continue;
         }
 
@@ -126,11 +117,11 @@ static void start_proxy_server(char *port){
         // Child process job
         if(child_pid == 0)
         {
-            signal(SIGTERM, TERM_handler);
+            signal(SIGINT, TERM_handler);
             handle_client(accept_fd);
             // Child process exits
             close(accept_fd);
-            exit(0);
+            exit(EXIT_SUCCESS);
         }
     }
 }
@@ -148,7 +139,7 @@ static void handle_client(int client_fd){
         fprintf(stderr, "Handling : cannot read client's request ! \n");
         return;
     }
-    free(client_request);
+    http_request_free(client_request);
     // Filter URLs
     
     // Filter methods

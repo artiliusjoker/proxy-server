@@ -1,10 +1,5 @@
 #include "../include/http.h"
 
-typedef struct r_buf{
-    char buf[MAX_READ_BUF];
-    unsigned int r_pos, w_pos; // for keeping track of positions when read line
-}read_buffer;
-
 const int http_method_len = UNKNOWN - OPTIONS;
 const char *http_methods_array[] = {
     "OPTIONS", 
@@ -18,18 +13,17 @@ const char *http_methods_array[] = {
     "UNKNOWN"
 };
 
-int read_line_socket(int fd, char *dst, unsigned int size)
+int read_line_socket(read_buffer *r_buf, char *dst, unsigned int size)
 {
     unsigned int i = 0;
     ssize_t bytes_recv;
-    read_buffer buffer;
-
+    
     while (i < size) {
-        if (buffer.r_pos == buffer.w_pos) 
+        if (r_buf->r_pos == r_buf->w_pos) 
         {
-            size_t wpos = buffer.w_pos % MAX_READ_BUF;
+            size_t wpos = r_buf->w_pos % MAX_READ_BUF;
         
-            if((bytes_recv = recv(fd, buffer.buf + wpos, (MAX_READ_BUF - wpos), 0)) < 0) 
+            if((bytes_recv = recv(r_buf->current_fd, r_buf->buf + wpos, (MAX_READ_BUF - wpos), 0)) < 0) 
             {
                 return -1;
             } 
@@ -37,9 +31,9 @@ int read_line_socket(int fd, char *dst, unsigned int size)
             {
                  return 0;
             }
-            buffer.w_pos += bytes_recv;
+            r_buf->w_pos += bytes_recv;
         }
-        dst[i++] = buffer.buf[buffer.r_pos++ % MAX_READ_BUF];
+        dst[i++] = r_buf->buf[r_buf->r_pos++ % MAX_READ_BUF];
         if (dst[i - 1] == '\n')
         {
             break;
@@ -61,12 +55,15 @@ http_request *http_read_request(int sockfd)
 {
 	http_request *new_request = (http_request *) malloc(sizeof(http_request));
     new_request->method = 0; 
-    TAILQ_INIT(&new_request->metadata_head); 
+    TAILQ_INIT(&new_request->metadata_head);
 
-	char buffer[MAX_LINE_BUF]; 
-
+    char buffer[MAX_LINE_BUF];
+    read_buffer *rbuf;
+    rbuf = calloc(1, sizeof(*rbuf));
+    rbuf->current_fd = sockfd;
+    
     // First line -> get METHOD, URL, VERSION
-    read_line_socket(sockfd, buffer, MAX_LINE_BUF);
+    read_line_socket(rbuf, buffer, MAX_LINE_BUF);
     char* token = NULL;
     char* copy, *pointer_copy;
 
@@ -74,7 +71,7 @@ http_request *http_read_request(int sockfd)
     pointer_copy = copy;
     int index = 0;
     while ((token = strsep(&copy, " \r\n")) != NULL) {
-        printf("%s", token);
+        if(index == 3) break;
         switch (index) {
             case 0: {
                 int found = 0;
@@ -127,29 +124,29 @@ http_request *http_read_request(int sockfd)
     // Rest : other metadata
     do
     {
-       read_line_socket(sockfd, buffer, MAX_LINE_BUF);
-       printf("%s", buffer);
-       if(buffer[0] == '\r' && buffer[1] == '\n')
+        int read_size = read_line_socket(rbuf, buffer, MAX_LINE_BUF);
+        if(buffer[0] == '\r' && buffer[1] == '\n')
 		{
-			// The end of the HTTP header 
-			break; 
+			// The end of the HTTP header
+			break;
 		}
-        copy = strdup(buffer); 
-        char *key = strdup(strtok(copy, ":")); 
-        char *value = strtok(NULL, "\r"); 
+        copy = strdup(buffer);
+        char *key = strdup(strtok(copy, ":"));
+        char *value = strdup(strtok(NULL, "\r"));
         free(copy);
         // remove whitespaces
-        char *p = value; 
-        while(*p == ' ') p++; 
-        value = strdup(p); 
+        char *p = value;
+        while(*p == ' ') p++;
+        value = strdup(p);
         // create the http_metadata_item object
-        struct http_metadata_item *item = malloc(sizeof(*item)); 
-        item->key = key; 
-        item->value = value; 
-        // add the new item to the list of metadatas
+        struct http_metadata_item *item = malloc(sizeof(*item));
+        item->key = key;
+        item->value = value;
+        // add the new item to the list of metadatas     
         TAILQ_INSERT_TAIL(&new_request->metadata_head, item, entries);
 
     } while (1);
+    free(rbuf);
     http_request_print(new_request);
     return new_request;
 }
@@ -189,5 +186,4 @@ static void http_request_print(http_request *req)
     TAILQ_FOREACH(item, &req->metadata_head, entries) {
         printf("%s: %s\n", item->key, item->value); 
     }
-    printf("\n"); 
 }

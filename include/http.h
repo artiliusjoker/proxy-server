@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/queue.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "constants.h"
 
@@ -57,6 +59,11 @@ char *http_build_reply();
 
 // Utils
 // Read a whole line from fd
-int read_line_socket(int fd, char *dst, unsigned int size);
+typedef struct r_buf{
+    char buf[MAX_READ_BUF];
+    unsigned int r_pos, w_pos; // for keeping track of positions when read line
+    unsigned int current_fd;
+}read_buffer;
+int read_line_socket(read_buffer *, char *, unsigned int);
 
 #endif
