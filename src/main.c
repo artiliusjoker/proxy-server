@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     
     if(argv[2] != NULL)
     {
-        filter_requests = (char *) malloc(strlen(argv[2]) + 1);
+        filter_requests = strdup(argv[2]);
     }
 
     start_proxy_server(argv[1]);

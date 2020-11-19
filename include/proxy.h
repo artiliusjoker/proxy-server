@@ -19,6 +19,7 @@
 
 #include "constants.h"
 #include "http.h"
+#include "url_parser.h"
 
 // Signal handling
 void SIGUSR1_handler(int signum);
