@@ -96,7 +96,7 @@ http_request *http_read_request(int sockfd, char** request_result)
                 break;
             }
             case 1:
-                new_request->url = strdup(token);
+                new_request->search_path = strdup(token);
                 ++index;
                 break;
             case 2:
@@ -167,7 +167,7 @@ http_request *http_read_request(int sockfd, char** request_result)
 
 void http_request_free(http_request *req)
 {
-    free((char*)req->url);
+    free((char*)req->search_path);
     struct http_metadata_item *item; 
     TAILQ_FOREACH(item, &req->metadata_head, entries) {
         free((char*)item->key);
@@ -197,7 +197,7 @@ static void http_request_print(http_request *req)
     printf("method:\t\t%s\n", 
             http_methods_array[req->method]);
     printf("path:\t\t%s\n", 
-            req->url); 
+            req->search_path); 
     printf("[Metadata] \n"); 
     struct http_metadata_item *item; 
     TAILQ_FOREACH(item, &req->metadata_head, entries) {
