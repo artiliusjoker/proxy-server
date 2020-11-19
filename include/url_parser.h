@@ -11,7 +11,7 @@
 /*
  * URL storage
  */
-struct parsed_url {
+typedef struct parsed_url {
     char *scheme;               /* mandatory */
     char *host;                 /* mandatory */
     char *port;                 /* optional */
@@ -20,7 +20,7 @@ struct parsed_url {
     char *fragment;             /* optional */
     char *username;             /* optional */
     char *password;             /* optional */
-};
+}http_parsed_url;
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,7 +30,7 @@ extern "C" {
      * Declaration of function prototypes
      */
     struct parsed_url * parse_url(const char *);
-    void parsed_url_free(struct parsed_url *);
+    void http_parsed_url_free(struct parsed_url *);
 
 #ifdef __cplusplus
 }

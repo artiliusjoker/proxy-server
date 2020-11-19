@@ -5,7 +5,7 @@
  *      Hirochika Asai
  */
 
-#include "url_parser.h"
+#include "../include/url_parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,7 +41,7 @@ parse_url(const char *url)
     int bracket_flag;
 
     /* Allocate the parsed url storage */
-    purl = malloc(sizeof(struct http_parsed_url));
+    purl = malloc(sizeof(struct parsed_url));
     if ( NULL == purl ) {
         return NULL;
     }
@@ -287,7 +287,7 @@ parse_url(const char *url)
  * Free memory of parsed url
  */
 void
-parsed_url_free(struct parsed_url *purl)
+http_parsed_url_free(struct parsed_url *purl)
 {
     if ( NULL != purl ) {
         if ( NULL != purl->scheme ) {

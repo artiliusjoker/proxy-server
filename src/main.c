@@ -160,7 +160,15 @@ static void handle_client(int client_fd, const char *filter_str){
     }
 
     // Filter URLs
+    http_parsed_url *parsed_request_url = NULL;
+    if(filter_requests)
+    {
+        parsed_request_url = parse_url(client_request->search_path);
+    }
     
+    
+
+
     // Filter methods
     if(client_request->method != HEAD && client_request->method != GET)
     {
@@ -168,6 +176,8 @@ static void handle_client(int client_fd, const char *filter_str){
 
         http_request_free(client_request);
         free(request_in_string);
+        if(parsed_request_url)
+            http_parsed_url_free(parsed_request_url);
         return;
     }
 
@@ -179,6 +189,8 @@ static void handle_client(int client_fd, const char *filter_str){
 
         http_request_free(client_request);
         free(request_in_string);
+        if(parsed_request_url)
+            http_parsed_url_free(parsed_request_url);
         return;
     }
     // Send request to web server
@@ -190,6 +202,8 @@ static void handle_client(int client_fd, const char *filter_str){
         close(server_fd);
         http_request_free(client_request);
         free(request_in_string);
+        if(parsed_request_url)
+            http_parsed_url_free(parsed_request_url);
         return;
     }
     free(request_in_string);
@@ -224,6 +238,8 @@ static void handle_client(int client_fd, const char *filter_str){
     receive_and_reply_content(server_fd, client_fd);
 
     // Done, clean garbage
+    if(parsed_request_url)
+        http_parsed_url_free(parsed_request_url);
     close(server_fd);
     http_request_free(client_request);
 }
