@@ -52,6 +52,7 @@ int connect_server(http_request *request)
     // DNS lookup to get IP address from hostname
 	if((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0)
 	{
+        free(port);
 		return -1; 
 	}
     if(flag)
@@ -63,6 +64,7 @@ int connect_server(http_request *request)
     holder = p;
     if (p == NULL) 
     {
+        free(holder);
 		return -1;
 	}
 	for(p; p != NULL; p = p->ai_next) {
@@ -142,12 +144,10 @@ int receive_and_reply_content(int server_fd, int client_fd)
     return 0;
 }
 
-int send_line(int client_fd, char*line)
+int send_error_response(int error_code, int client_fd)
 {
-    if(send(client_fd, line, strlen(line), 0) == -1)
-    {
-        perror("Sending to client ");
-        return -1;
-    }
+    http_custom_response * error_response = http_response_build(error_code);
+    send_all_to_socket(client_fd, error_response->http_header, error_response->header_size, NULL);
+    http_response_free(error_response);
     return 0;
 }

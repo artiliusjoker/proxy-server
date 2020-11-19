@@ -273,7 +273,7 @@ http_custom_response *http_response_build(int status_code)
                                                             "Date: Mon, 19 Nov 2020 10:21:21 GMT\r\n" // fake date
                                                             "Cache-Control: no-cache, private\r\n" //No cache
                                                             "Content-Length: 0\r\n" // no content                                                
-                                                            "Connection: Closed"
+                                                            "Connection: closed\r\n"
                                                             "\r\n", tuple->status_code, tuple->status_name);
     new_response->header_size = strlen(new_response->http_header);
     new_response->content_size = 0;

@@ -36,7 +36,7 @@ static void TERM_handler(int signum)
 }
 
 static void start_proxy_server(char *port);
-static void handle_client(int client_fd);
+static void handle_client(int client_fd, const char *);
 
 
 int main(int argc, char *argv[])
@@ -135,7 +135,7 @@ static void start_proxy_server(char *port){
         if(child_pid == 0)
         {
             signal(SIGINT, TERM_handler);
-            handle_client(accept_fd);
+            handle_client(accept_fd, filter_requests);
             // Child process exits
             close(accept_fd);
             exit(EXIT_SUCCESS);
@@ -143,7 +143,7 @@ static void start_proxy_server(char *port){
     }
 }
 
-static void handle_client(int client_fd){
+static void handle_client(int client_fd, const char *filter_str){
     
     int server_fd, retVal;
     http_request *client_request = NULL;
@@ -153,6 +153,8 @@ static void handle_client(int client_fd){
     client_request = http_read_request(client_fd, &request_in_string);
     if(client_request == NULL)
     {
+        send_error_response(BAD_REQUEST, client_fd);
+
         fprintf(stderr, "Handling : cannot read client's request ! \n");
         return;
     }
@@ -162,11 +164,9 @@ static void handle_client(int client_fd){
     // Filter methods
     if(client_request->method != HEAD && client_request->method != GET)
     {
-        http_custom_response * error_response = http_response_build(METHOD_NOT_ALLOWED);
-        send_all_to_socket(client_fd, error_response->http_header, error_response->header_size, NULL);
+        send_error_response(METHOD_NOT_ALLOWED, client_fd);
 
         http_request_free(client_request);
-        http_response_free(error_response);
         free(request_in_string);
         return;
     }
@@ -175,6 +175,8 @@ static void handle_client(int client_fd){
     server_fd = connect_server(client_request);
     if(server_fd == -1)
     {
+        send_error_response(NOT_FOUND, client_fd);
+
         http_request_free(client_request);
         free(request_in_string);
         return;
@@ -183,12 +185,15 @@ static void handle_client(int client_fd){
     retVal = send_request(server_fd, request_in_string);
     if(retVal < 0)
     {
+        send_error_response(NOT_FOUND, client_fd);
+
         close(server_fd);
-        free(request_in_string);
         http_request_free(client_request);
+        free(request_in_string);
         return;
     }
-
+    free(request_in_string);
+    
     // // Read header from socket, if METHOD == HEAD => no content available from web server => stop, only read response header
     // char buffer[MAX_LINE_BUF];
     // read_buffer *rbuf;
@@ -220,7 +225,6 @@ static void handle_client(int client_fd){
 
     // Done, clean garbage
     close(server_fd);
-    free(request_in_string);
     http_request_free(client_request);
 }
 
