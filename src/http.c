@@ -1,5 +1,5 @@
 #include "../include/http.h"
-
+#include <time.h>
 
 const int http_method_len = UNKNOWN - OPTIONS;
 const char *http_methods_array[] = {
@@ -268,13 +268,19 @@ http_custom_response *http_response_build(int status_code)
     http_status_tuple * tuple;
     tuple = create_response_tuple(status_code);
     
+    // current system date
+    char date_buf[50];
+    time_t now = time(0);
+    struct tm tm = *gmtime(&now);
+    strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %H:%M:%S %Z", &tm);
+
     int retVal = snprintf(new_response->http_header, MAX_HTTP_HDR_SIZE, 
                                                             "HTTP/1.1 %s %s\r\n"
-                                                            "Date: Mon, 19 Nov 2020 10:21:21 GMT\r\n" // fake date
+                                                            "Date: %s\r\n" // fake date
                                                             "Cache-Control: no-cache, private\r\n" //No cache
                                                             "Content-Length: 0\r\n" // no content                                                
                                                             "Connection: closed\r\n"
-                                                            "\r\n", tuple->status_code, tuple->status_name);
+                                                            "\r\n", tuple->status_code, tuple->status_name, date_buf);
     new_response->header_size = strlen(new_response->http_header);
     new_response->content_size = 0;
     if(retVal < 0)
