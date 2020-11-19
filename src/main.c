@@ -1,5 +1,6 @@
 #include "../include/proxy.h"
-#include <semaphore.h>
+
+static void print_proxy_status();
 
 // Global var for printing program status
 int processed_requests;
@@ -36,7 +37,7 @@ static void TERM_handler(int signum)
 
 static void start_proxy_server(char *port);
 static void handle_client(int client_fd);
-static void print_proxy_status();
+
 
 int main(int argc, char *argv[])
 {
@@ -46,7 +47,7 @@ int main(int argc, char *argv[])
     
     if(argv[2] != NULL)
     {
-        filter_requests = (char *) malloc(strlen(argv[2]));
+        filter_requests = (char *) malloc(strlen(argv[2]) + 1);
     }
 
     start_proxy_server(argv[1]);
@@ -105,6 +106,7 @@ static void start_proxy_server(char *port){
     // Prepare for connections
     if(listen(fd, MAX_REQUESTS_QUEUE_SIZE) < 0)
     {
+        printf("Error in listen\n");
         perror("Server ");
         return;
     }
@@ -158,7 +160,7 @@ static void handle_client(int client_fd){
     // Filter URLs
     
     // Filter methods
-    if(client_request->method != HEAD || client_request->method != GET)
+    if(client_request->method != HEAD && client_request->method != GET)
     {
         http_custom_response * error_response = http_response_build(METHOD_NOT_ALLOWED);
         send_all_to_socket(client_fd, error_response->http_header, error_response->header_size, NULL);
@@ -187,7 +189,7 @@ static void handle_client(int client_fd){
         return;
     }
 
-    // // Buffer to read line from socket
+    // // Read header from socket, if METHOD == HEAD => no content available from web server => stop, only read response header
     // char buffer[MAX_LINE_BUF];
     // read_buffer *rbuf;
     // rbuf = calloc(1, sizeof(*rbuf));
@@ -208,9 +210,15 @@ static void handle_client(int client_fd){
     // }
     // free(rbuf);
 
+    // if METHOD == HEAD => no content available from web server => set timeout shorter to break block recv()
+    struct timeval tv;
+    tv.tv_sec = client_request->method == HEAD ? MAX_RECV_TIMEOUT_HEAD : MAX_RECV_TIMEOUT_GET;
+    tv.tv_usec = 0;
+    setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     // Receive and send content to client
     receive_and_reply_content(server_fd, client_fd);
 
+    // Done, clean garbage
     close(server_fd);
     free(request_in_string);
     http_request_free(client_request);

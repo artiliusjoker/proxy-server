@@ -100,14 +100,9 @@ int receive_and_reply_content(int server_fd, int client_fd)
     ssize_t num_bytes_read = 0;
     char* recv_buf;
     int err_flag = 0;
-    //printf("%d %d\n", server_fd, client_fd);
+    
 
-    // LINUX
-    struct timeval tv;
-    tv.tv_sec = MAX_RECV_TIMEOUT;
-    tv.tv_usec = 0;
-    setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
-
+    
     while(1)
 	{
         recv_buf = (char *) malloc(MAX_READ_BUF);
