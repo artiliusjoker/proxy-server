@@ -7,6 +7,7 @@ int processed_requests;
 int filtered_requests;
 int error_requests;
 char *filter_requests;
+int listening_fd;
 
 // Signal handling
 void SIGUSR1_handler(int signum)
@@ -25,6 +26,7 @@ void SIGUSR2_handler(int signum)
     while ((wait_retVal = wait(&status)) > 0);
     fprintf(stdout, "Program terminated by SIGUSR2\n");
     
+    close(listening_fd);
     if(filter_requests)
         free(filter_requests);
     exit(EXIT_SUCCESS);
@@ -36,15 +38,16 @@ static void TERM_handler(int signum)
 }
 
 static void start_proxy_server(char *port);
-static void handle_client(int client_fd, const char *);
-
+static void handle_client(int client_fd, char *);
+static char filter_check(char *filter, char*url_to_check);
 
 int main(int argc, char *argv[])
 {
     processed_requests = 0;
     filtered_requests = 0;
     error_requests = 0;
-    
+    listening_fd = 0;
+
     if(argv[2] != NULL)
     {
         filter_requests = strdup(argv[2]);
@@ -110,6 +113,7 @@ static void start_proxy_server(char *port){
         perror("Server ");
         return;
     }
+    listening_fd = fd;
     int accept_fd;
     // Fork process's child to handle clients
     printf("Proxy server is listening on port %s\n", port);
@@ -143,7 +147,7 @@ static void start_proxy_server(char *port){
     }
 }
 
-static void handle_client(int client_fd, const char *filter_str){
+static void handle_client(int client_fd, char *filter_str){
     
     int server_fd, retVal;
     http_request *client_request = NULL;
@@ -161,13 +165,19 @@ static void handle_client(int client_fd, const char *filter_str){
 
     // Filter URLs
     http_parsed_url *parsed_request_url = NULL;
-    if(filter_requests)
+    if(filter_str)
     {
-        parsed_request_url = parse_url(client_request->search_path);
+        char *host = (char*)list_get_value(&client_request->metadata_head, "Host");
+        //parsed_request_url = parse_url(client_request->search_path);
+        char is_filtered = filter_check(filter_str, host);
+        if(is_filtered == 'F')
+        {
+            send_error_response(FORBIDDEN, client_fd);
+            http_request_free(client_request);
+            free(request_in_string);
+            return;
+        }
     }
-    
-    
-
 
     // Filter methods
     if(client_request->method != HEAD && client_request->method != GET)
@@ -176,8 +186,6 @@ static void handle_client(int client_fd, const char *filter_str){
 
         http_request_free(client_request);
         free(request_in_string);
-        if(parsed_request_url)
-            http_parsed_url_free(parsed_request_url);
         return;
     }
 
@@ -189,8 +197,6 @@ static void handle_client(int client_fd, const char *filter_str){
 
         http_request_free(client_request);
         free(request_in_string);
-        if(parsed_request_url)
-            http_parsed_url_free(parsed_request_url);
         return;
     }
     // Send request to web server
@@ -202,8 +208,6 @@ static void handle_client(int client_fd, const char *filter_str){
         close(server_fd);
         http_request_free(client_request);
         free(request_in_string);
-        if(parsed_request_url)
-            http_parsed_url_free(parsed_request_url);
         return;
     }
     free(request_in_string);
@@ -238,8 +242,6 @@ static void handle_client(int client_fd, const char *filter_str){
     receive_and_reply_content(server_fd, client_fd);
 
     // Done, clean garbage
-    if(parsed_request_url)
-        http_parsed_url_free(parsed_request_url);
     close(server_fd);
     http_request_free(client_request);
 }
@@ -252,4 +254,47 @@ static void print_proxy_status()
                     "-- Filtered %d requests"
                     "-- Encountered %d requests in error"
                     ,processed_requests, filter_requests, filtered_requests, error_requests);
+}
+
+static char filter_check(char *filter, char*url_to_check){
+
+    char *p_substr = strstr(url_to_check, filter);
+    int is_suffix = 0;
+    int is_prefix = 0;
+    // Exists filter in url
+    if(p_substr)
+    {
+        int url_len = strlen(url_to_check);
+        // find prefix
+        for (size_t i = 0; i < url_len; i++)
+        {
+            if(url_to_check[i] == '.')
+                break;
+            if(url_to_check[i] != filter[i])
+                is_prefix = 1;
+        }
+        // find last suffix of filter
+        int k = 0;
+        for (size_t i = url_len; i >= 0; --i)
+        {
+            if(filter[i])
+            {
+                k = i;
+                break;
+            }
+        }
+        // find suffix
+        for (size_t i = url_len - 1; i >= 0; --i)
+        {
+            if(url_to_check[i] == '.')
+                break;
+            if(url_to_check[i] != filter[k])
+            {
+                is_suffix = 1;
+            }
+            --k;
+        }
+        return (is_prefix == 1) && (is_suffix == 1) ? 'T' : 'F';
+    }
+    return 'F';
 }
