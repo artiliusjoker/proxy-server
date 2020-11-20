@@ -64,7 +64,7 @@ int connect_server(http_request *request)
     holder = p;
     if (p == NULL) 
     {
-        free(holder);
+        
 		return -1;
 	}
 	for(p; p != NULL; p = p->ai_next) {
@@ -80,7 +80,7 @@ int connect_server(http_request *request)
 		}
 		break;
 	}
-    free(holder);
+    freeaddrinfo(holder);
     if (p == NULL) 
     {
 		return -1;

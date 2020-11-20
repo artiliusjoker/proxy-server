@@ -174,6 +174,8 @@ static void handle_client(int client_fd, char *filter_str){
             send_error_response(FORBIDDEN, client_fd);
             http_request_free(client_request);
             free(request_in_string);
+            if(filter_str)
+                free(filter_str);
             return;
         }
     }
@@ -241,6 +243,8 @@ static void handle_client(int client_fd, char *filter_str){
     receive_and_reply_content(server_fd, client_fd);
 
     // Done, clean garbage
+    if(filter_str)
+        free(filter_str);
     close(server_fd);
     http_request_free(client_request);
 }
