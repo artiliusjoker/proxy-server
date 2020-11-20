@@ -67,7 +67,7 @@ $ valgrind --leak-check=full --show-reachable=yes ./<MSSV> 8888
 $ curl -v --proxy localhost:8888 [http://hcmus.edu.vn/](http://hcmus.edu.vn/)  
     Result:  
         LEAK SUMMARY:  
-        definitely lost: X bytes in Y blocks  
+        definitely lost: 0 bytes in 0 blocks  
         indirectly lost: 0 bytes in 0 blocks  
         possibly lost: 0 bytes in 0 blocks  
         still reachable: 0 bytes in 0 blocks  
