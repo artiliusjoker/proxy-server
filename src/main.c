@@ -164,7 +164,6 @@ static void handle_client(int client_fd, char *filter_str){
     }
 
     // Filter URLs
-    http_parsed_url *parsed_request_url = NULL;
     if(filter_str)
     {
         char *host = (char*)list_get_value(&client_request->metadata_head, "Host");
