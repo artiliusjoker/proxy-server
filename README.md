@@ -4,6 +4,19 @@ Programming language: C/C++
 OS: Linux (Kali distro)  
 Multi processes  
 
+## Turn on proxy
+```console
+foo@bar:~$ make all
+foo@bar:~$ exe/1712695 8888
+#or
+foo@bar:~$ exe/1712695 8888 filter_string
+```
+
+## Turn off proxy
+```console
+foo@bar:~$ pkill 1712695 --signal 12
+```
+
 **1. GET/HEAD**
 - GET request from web browser (FF or Chrome)  
     Test case:
