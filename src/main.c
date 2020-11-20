@@ -96,23 +96,26 @@ static void start_proxy_server(char *port){
         {
             continue;
         }
-
         if(bind(fd, iterator->ai_addr, iterator->ai_addrlen) < 0)
+        {
+            close(fd);
+            continue;
+        }
+        // Prepare for connections
+        if(listen(fd, MAX_REQUESTS_QUEUE_SIZE) < 0)
         {
             close(fd);
             continue;
         }
         break;
     }
-    freeaddrinfo(list);
-    
-    // Prepare for connections
-    if(listen(fd, MAX_REQUESTS_QUEUE_SIZE) < 0)
+    if(iterator == NULL)
     {
-        printf("Error in listen\n");
-        perror("Server ");
+        fprintf(stderr, "Server: cannot create socket fd !\n");
+        freeaddrinfo(list);
         return;
     }
+    freeaddrinfo(list);
     listening_fd = fd;
     int accept_fd;
     // Fork process's child to handle clients
